@@ -1,58 +1,55 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	// "log"
-	// "github.com/startFromBottom/learngo/accounts"
-	"github.com/startFromBottom/learngo/dict"
-	
+	"net/http"
 )
+
+var errRequestFailed = errors.New("Request failed")
+
+type requestResult struct {
+	url string
+	status string
+}
 
 
 func main() {
+
+	results := make(map[string]string)
+
+	c := make(chan requestResult)
+	urls := []string{
+		"https://www.airbnb.com/",
+		"https://www.google.com/",
+		"https://www.amazon.com/",
+		"https://www.reddit.com/",
+		"https://www.soundcloud.com/",
+		"https://www.facebook.com/",
+		"https://www.instagram.com/",
+		"https://academy.nomadcoders.co/",
+
+	}
+	for _, url := range urls {
+		go hitURL(url, c)
+	}
+
+	for i:=0; i<len(urls); i++{
+		result := <-c
+		results[result.url] = result.status
+	}
+
+	for url, status := range results {
+		fmt.Println(url, status)
+	}
 	
-	// // part 1 account
-	// account := accounts.NewAccount("nico")
-	// account.Deposit(10)
-	// fmt.Println(account.Balance())
-	// err := account.Withdraw(20)
-	// if err != nil {
-	// 	// log.Fatalln(err) // kill process
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(account)
-
-	// // part2 account
-	// dictionary := mydict.Dictionary{"first": "First word"}
-	// word := "hello"
-	// definition := "Greeting"
-
-	// err := dictionary.Add(word, definition)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	// hello, _ := dictionary.Search(word)
-	// fmt.Println("found", word, "definition : ", hello)
-	// err2 := dictionary.Add(word, definition)
-	// if err2 != nil {
-	// 	fmt.Println(err2)
-	// }
-	
-	// // update
-	// errUpdate := dictionary.Update(word, "alladin")
-	// if errUpdate != nil {
-	// 	fmt.Println(errUpdate)
-	// }
-	// updatedWord, _ := dictionary.Search(word)
-	// fmt.Println(updatedWord)
-
-	// //delete
-	// tempWord := "asdfsdfsdfasdf"
-	// delErr := dictionary.Delete(tempWord)
-	// if delErr != nil {
-	// 	fmt.Println(delErr)
-	// }
-
 }
 
+func hitURL(url string, c chan<- requestResult) { // send only channel
+	res, err := http.Get(url)
+	status := "OK"
+	if err != nil || res.StatusCode >= 400 {
+		status = "FAILED"
+	}
+	c <- requestResult{url: url, status: status}
+}
